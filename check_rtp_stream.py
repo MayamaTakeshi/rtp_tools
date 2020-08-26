@@ -32,13 +32,14 @@ for ts, buf in preader:
     if eth[ethernet.Ethernet, ip.IP, udp.UDP] is not None:
         if eth[ip.IP].src_s == src_ip and eth[udp.UDP].sport == src_port and eth[ip.IP].dst_s == dst_ip and eth[udp.UDP].dport == dst_port:
             r = rtp.RTP(eth[udp.UDP].body_bytes)
-            print("%d: %s:%s -> %s:%s pt=%s ts=%s seqnum=%s" % (
+            print("%d: pt=%s ts=%s seqnum=%s" % (
                 ts, 
-                eth[ip.IP].src_s, eth[udp.UDP].sport,
-                eth[ip.IP].dst_s, eth[udp.UDP].dport,
                 r.pt,
                 r.ts,
                 r.seq
             ))
-
+            sys.stdout.write("payload: ")
+            for b in r.body_bytes:
+                sys.stdout.write(hex(b) + " ")
+            print("")
 
