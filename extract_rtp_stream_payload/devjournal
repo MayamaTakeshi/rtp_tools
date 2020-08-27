@@ -1,0 +1,16 @@
+==============================================================
+2020/08/27 takeshi:
+
+Silence packet definitions:
+
+u-law: 160 bytes as 0xff
+
+a-law: 160 bytes as 0xd5 (or 0x00)
+
+gsm: 33 bytes: 0xdb6c followed by 31 bytes as 0x00
+
+g729: 0x78,0x52,0x80,0xa0,0x00,0xfa,0xc2,0x00,0x07,0xd6 
+
+  Ref: 
+    https://lists.gt.net/ethereal/dev/42285
+    https://www.wireshark.org/lists/ethereal-dev/200505/msg00325.html
