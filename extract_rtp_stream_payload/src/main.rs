@@ -111,6 +111,14 @@ fn main() {
 
         let ts : i64 = p.header.ts.tv_sec * 1000 + p.header.ts.tv_usec / 1000;
 
+        if ts < start_stamp {
+            continue;
+        }
+
+        if ts > end_stamp {
+            break;
+        }
+
         let mut d;
 
         if dl == Linktype(1) {
