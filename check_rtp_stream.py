@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+# this is mostly a sample script showing how extractg and process RTP packets from pcap files
+
 import pypacker
 from pypacker import ppcap
 from pypacker.layer12 import ethernet
