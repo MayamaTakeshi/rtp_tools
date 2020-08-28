@@ -79,7 +79,7 @@ fn main() {
     }
 
     if end_stamp - start_stamp > TIME_SPAN_LIMIT {
-        eprintln!("end_stamp - start_stamp = {}. To large time span. Aborting.", end_stamp - start_stamp);
+        eprintln!("end_stamp - start_stamp = {}. Too large time span (TIME_SPAN_LIMIT={}). Aborting.", end_stamp - start_stamp, TIME_SPAN_LIMIT);
         std::process::exit(1);
     }
 
@@ -88,7 +88,7 @@ fn main() {
     let dl = cap.get_datalink();
 
     if dl != Linktype(1) && dl != Linktype(113) {
-        eprintln!("datalink isn't either Ethernte or Linux cooked SLL. Aborting.");
+        eprintln!("datalink isn't either Ethernet or Linux cooked SLL. Aborting.");
         std::process::exit(1);
     }
 
@@ -107,9 +107,8 @@ fn main() {
             Err(e) => panic!("cap.next failed: {:?}", e),
         };
 
-        count += 1;
-
         let ts : i64 = p.header.ts.tv_sec * 1000 + p.header.ts.tv_usec / 1000;
+        //println!("ts={}", ts);
 
         if ts < start_stamp {
             continue;
@@ -165,6 +164,8 @@ fn main() {
         // rtp header without extensions is 12 bytes
         out.write(&udp_data[12..]);
 
+        count += 1;
+
         last_ts = ts;
     }
 
@@ -172,6 +173,7 @@ fn main() {
     let expected = (end_stamp - start_stamp) / 20;
     println!("expected={} count={}", expected, count);
     for i in 0..(expected - count) {
+        println!("adding post silence");
         write_silence(&out, payload_type);
     }
 }
