@@ -92,24 +92,13 @@ struct linked_list *get(uint32_t ip_src, uint32_t ip_dst, u_short sport, u_short
 	return new_item(ip_src, ip_dst, sport, dport, payload_type);
 }
 
-static union { char c[4]; unsigned long mylong; } endian_test = { { 'l', '?', '?', 'b' } };
-#define ENDIANNESS ((char)endian_test.mylong)
-
-
 void split_ipv4(u_char *octects, uint32_t ip) {
-	if (ENDIANNESS == 'l')  {
-		/* little endian */
-		octects[0] = ip & 0xFF;
-		octects[1] = ip >> 8 & 0xFF;
-		octects[2] = ip >> 16 & 0xFF;
-		octects[3] = ip >> 24 & 0xFF;
-	} else {
-		/* big endian */
-		octects[3] = ip & 0xFF;
-		octects[2] = ip >> 8 & 0xFF;
-		octects[1] = ip >> 16 & 0xFF;
-		octects[0] = ip >> 24 & 0xFF;
-	}
+	uint32_t hip = ntohl(ip);
+
+	octects[3] = hip & 0xFF;
+	octects[2] = hip >> 8 & 0xFF;
+	octects[1] = hip >> 16 & 0xFF;
+	octects[0] = hip >> 24 & 0xFF;
 }
 
 void dump_stats(struct linked_list *c) {
