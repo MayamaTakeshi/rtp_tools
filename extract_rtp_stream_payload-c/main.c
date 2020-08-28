@@ -58,10 +58,11 @@ char silence_g729[SILENCE_PAYLOAD_SIZE_G729] = {0x78, 0x52, 0x80, 0xa0, 0x00, 0x
 
 
 void prepare_silence() {
-	for(int i=0; i<SILENCE_PAYLOAD_SIZE_ULAW; i++) {
+	int i;
+	for(i=0; i<SILENCE_PAYLOAD_SIZE_ULAW; i++) {
 		silence_ulaw[i] = 0xff;
 	}
-	for(int i=0; i<SILENCE_PAYLOAD_SIZE_ALAW; i++) {
+	for(i=0; i<SILENCE_PAYLOAD_SIZE_ALAW; i++) {
 		silence_alaw[i] = 0xd5;
 	}
 }
@@ -256,10 +257,12 @@ int main(int argc, char *argv[]) {
 
         unsigned long diff = ts - last_ts;
 
+	int i;
+
         if(diff > DELAY_THRESHOLD) {
             unsigned silence_packets = diff / 20;
 
-            for(int i=0 ; i<silence_packets ; ++i) {
+            for(i=0 ; i<silence_packets ; ++i) {
                 printf("adding silence for %lu %u\n", last_ts, seqnum);
                 write_silence(out, payload_type);
                 count++;
@@ -278,7 +281,8 @@ int main(int argc, char *argv[]) {
     // write silence at the end if necessary
     int expected = (end_stamp - start_stamp) / 20;
     printf("expected=%i count=%i\n", expected, count);
-    for(int i=0 ; i<(expected - count) ; ++i) {
+    int i;
+    for(i=0 ; i<(expected - count) ; ++i) {
         printf("adding post silence\n");
         write_silence(out, payload_type);
     }
