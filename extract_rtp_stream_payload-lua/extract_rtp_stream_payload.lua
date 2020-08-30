@@ -1,4 +1,4 @@
-#!/usr/local/bin/lua
+#!/usr/bin/lua
 
 
 local function hexdump(s)
@@ -148,15 +148,15 @@ local count = 0
 
 local function process_packet(data, ts, len)
 	ts = ts * 1000
-	print("ts=" .. ts)
+	-- print("ts=" .. ts)
 
 	if ts < start_stamp then
-		print("ts < start_stamp")
+		-- print("ts < start_stamp")
 		return
 	end
 
 	if ts > end_stamp then
-		print("ts > end_stamp")
+		-- print("ts > end_stamp")
 		return
 	end
 
@@ -178,7 +178,7 @@ local function process_packet(data, ts, len)
 	end
 
 	if ip.proto ~= 17 then
-		print("not udp packet")
+		-- print("not udp packet")
 		return
 	end
 
@@ -188,14 +188,13 @@ local function process_packet(data, ts, len)
 
 	local ver = bit.band(bit.rshift(rtp:byte(1), 6), 0x02)
 	if ver ~= 2 then
-		-- not RTP packet
-		print("Ignoring non-RTP packet.")
+		-- print("Ignoring non-RTP packet.")
 		return
 	end
 
 	local pt = bit.band(rtp:byte(2), 0x7F)
 	if pt ~= payload_type then
-		print("Ignoring packet with unexpected payload_type=" .. pt)
+		-- print("Ignoring packet with unexpected payload_type=" .. pt)
 		return
 	end	
 
@@ -213,7 +212,7 @@ local function process_packet(data, ts, len)
 		local silence_packets = diff / 20
 
 		for i=1,silence_packets do
-			print(string.format("adding silence pt=%u for %u %u\n", pt, last_ts, seqnum))
+			-- print(string.format("adding silence pt=%u for %u %u\n", pt, last_ts, seqnum))
 			write_silence(out, payload_type)
 			count = count + 1
 		end
@@ -222,7 +221,7 @@ local function process_packet(data, ts, len)
 	local size = len - 54;
 	-- rtp header without extensions is 12 bytes
 	local payload = rtp:sub(12+1)
-	hexdump(payload)
+	-- hexdump(payload)
 	out:write(payload)
 
 	count = count + 1
@@ -249,7 +248,7 @@ end
 local expected = (end_stamp - start_stamp) / 20
 print(string.format("expected=%i count=%i", expected, count))
 for i=0,(expected - count) do
-	print("adding post silence for payload_type=" .. payload_type)
+	-- print("adding post silence for payload_type=" .. payload_type)
 	write_silence(out, payload_type)
 end
 
