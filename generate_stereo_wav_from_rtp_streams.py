@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 
 import sys
 import os
@@ -25,7 +25,7 @@ conversion_templates = {
 
 extract_template = "extract_rtp_stream_payload %(pcap_file)s %(src_ip)s %(src_port)s %(dst_ip)s %(dst_port)s %(payload_type)s %(codec)s %(start_stamp)s %(end_stamp)s %(payload_file)s"
 
-gen_stereo_wav_template = "sox -M %(wav1)s %(wav2)s -e signed-integer -b 32 %(out_file)s"
+gen_stereo_wav_template = "sox -M %(wav1)s %(wav2)s -e u-law %(out_file)s"
 
 d = {
     "pcap_file": pcap_file, 
