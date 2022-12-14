@@ -240,9 +240,9 @@ end
 
 
 while true do
-	local success, data, ts, len = cap:next_ex()
+	local success, data, ts, len = cap:next()
 	if not success then
-		print("next_ex failed: " .. data)
+		print("next failed: " .. data)
 		os.exit(1)
 	elseif not data then 
 		-- no more packets
