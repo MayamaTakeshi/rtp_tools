@@ -1,4 +1,4 @@
-#!/usr/bin/lua
+#!/usr/local/bin/lua
 
 
 local function hexdump(s)
@@ -240,11 +240,8 @@ end
 
 
 while true do
-	local success, data, ts, len = cap:next()
-	if not success then
-		print("next failed: " .. data)
-		os.exit(1)
-	elseif not data then 
+	local got_packet, data, ts, len = cap:next()
+	if not got_packet then
 		-- no more packets
 		break
 	end	
