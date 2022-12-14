@@ -240,11 +240,15 @@ end
 
 
 while true do
-	local got_packet, data, ts, len = cap:next()
-	if not got_packet then
+	local data, ts, len = cap:next()
+	if not data then
 		-- no more packets
 		break
 	end	
+	print("got packet")
+	print("data", type(data), data)
+	print("ts", type(ts), ts)
+	print("len", type(len), len)
 	process_packet(data, ts, len)
 end
 
