@@ -245,10 +245,6 @@ while true do
 		-- no more packets
 		break
 	end	
-	print("got packet")
-	print("data", type(data), data)
-	print("ts", type(ts), ts)
-	print("len", type(len), len)
 	process_packet(data, ts, len)
 end
 
