@@ -19,11 +19,11 @@ use std::io::Write;
 fn usage(app: &str) {
     println!(" \
 Usage: {} pcap_file src_ip src_port dst_ip dst_port payload_type codec start_stamp end_stamp stream.raw \
-Ex:    {} test.pcap 192.168.2.1 10000 192.168.2.2 20000 0 pcmu 1597619570222 1597619590487 out_file\
-
+Ex:    {} test.pcap 192.168.2.1 10000 192.168.2.2 20000 0 pcmu 1597619570222 1597619590487 out_file \
+ \
 Details:
       - start_stamp and end_stamp should be epoch in milliseconds \
-      - codec: pcmu | pcma | gsm | g.729
+      - codec: pcmu | pcma | gsm | g.729 \
 ", app, app);
 }
 
@@ -92,7 +92,7 @@ fn main() {
         std::process::exit(1);
     }
 
-    cap.filter(&["src host ", src_ip, " and src port ", src_port, " and dst host ", dst_ip, " and dst port ", dst_port ].concat()).unwrap();
+    cap.filter(&["src host ", src_ip, " and src port ", src_port, " and dst host ", dst_ip, " and dst port ", dst_port ].concat(), true).unwrap();
 
     let mut out = File::create(out_file).unwrap();
 
@@ -101,7 +101,7 @@ fn main() {
     let mut count = 0;
 
     loop {
-        let mut p = match cap.next() {
+        let mut p = match cap.next_packet() {
             Ok(v) => v,
             Err(pcap::Error::NoMorePackets) => break,
             Err(e) => panic!("cap.next failed: {:?}", e),
