@@ -44,33 +44,37 @@ struct ip_header {
 struct linked_list;
 
 struct linked_list {
-	uint32_t ip_src;	
-	uint32_t ip_dst;	
+	uint32_t ip_src;
+	uint32_t ip_dst;
 	u_short sport;
 	u_short dport;
 	int payload_type;
 	int count;
+
+	struct timeval first_tv;
+	struct timeval last_tv;
 
 	struct linked_list *next;
 } linked_list;
 
 struct linked_list *g_list = 0;
 
-struct linked_list *find(uint32_t ip_src, uint32_t ip_dst, u_short sport, u_short dport, struct linked_list *c) {
+struct linked_list *find(uint32_t ip_src, uint32_t ip_dst, u_short sport, u_short dport, struct linked_list *c, struct timeval tv) {
 	if(!c) return 0;
 
 	if(c->ip_src == ip_src && c->ip_dst == ip_dst && c->sport == sport && c->dport == dport) return c;
 
-	return find(ip_src, ip_dst, sport, dport, c->next);
+	return find(ip_src, ip_dst, sport, dport, c->next, tv);
 }
 
-struct linked_list *new_item(uint32_t ip_src, uint32_t ip_dst, u_short sport, u_short dport, int payload_type) {
+struct linked_list *new_item(uint32_t ip_src, uint32_t ip_dst, u_short sport, u_short dport, int payload_type, struct timeval tv) {
 	struct linked_list *item = malloc(sizeof(struct linked_list));
 	item->ip_src = ip_src;
 	item->ip_dst = ip_dst;
 	item->sport = sport;
 	item->dport = dport;
 	item->payload_type = payload_type;
+	item->first_tv = tv;
 
 	item->next = 0;
 
@@ -84,12 +88,12 @@ struct linked_list *new_item(uint32_t ip_src, uint32_t ip_dst, u_short sport, u_
 	return item;
 }
 
-struct linked_list *get(uint32_t ip_src, uint32_t ip_dst, u_short sport, u_short dport, int payload_type) {
-	struct linked_list *item = find(ip_src, ip_dst, sport, dport, g_list);
+struct linked_list *get(uint32_t ip_src, uint32_t ip_dst, u_short sport, u_short dport, int payload_type, struct timeval tv) {
+	struct linked_list *item = find(ip_src, ip_dst, sport, dport, g_list, tv);
 	if(item) {
 		return item;
 	}
-	return new_item(ip_src, ip_dst, sport, dport, payload_type);
+	return new_item(ip_src, ip_dst, sport, dport, payload_type, tv);
 }
 
 void split_ipv4(u_char *octects, uint32_t ip) {
@@ -110,7 +114,7 @@ void dump_stats(struct linked_list *c) {
 	split_ipv4(src_ip, c->ip_src);
 	split_ipv4(dst_ip, c->ip_dst);
 
-	printf("%u %d.%d.%d.%d %hu %d.%d.%d.%d %hu %i\n", 
+	printf("%u %d.%d.%d.%d %hu %d.%d.%d.%d %hu %i %lld %lld\n",
 		c->count,
 
 		src_ip[0],
@@ -127,7 +131,10 @@ void dump_stats(struct linked_list *c) {
 
 		ntohs(c->dport),
 
-		c->payload_type
+		c->payload_type,
+
+		(long long)(c->first_tv.tv_sec) * 1000 + (long long)(c->first_tv.tv_usec) / 1000,
+		(long long)(c->last_tv.tv_sec) * 1000 + (long long)(c->last_tv.tv_usec) / 1000
 	);
 
 	dump_stats(c->next);
@@ -163,7 +170,7 @@ int main(int argc, char *argv[]) {
 	int dl = pcap_datalink(descr);
 
 	if(DLT_EN10MB != dl && DLT_LINUX_SLL != dl) {
-		fprintf(stderr, "datalink isn't either Ethernet or Linux coonked SLL. Aborting.\n");
+		fprintf(stderr, "datalink isn't either Ethernet or Linux cooked SLL. Aborting.\n");
 		exit(1);
 	}
 
@@ -202,7 +209,7 @@ int main(int argc, char *argv[]) {
 		int ver = (rtp_h[0] >> 6) & 0x02;
 		if(ver != 2) {
 			// not RTP packet
-            //fprintf(stderr, "Ignoring non-RTP packet.\n");
+			//fprintf(stderr, "Ignoring non-RTP packet.\n");
 			continue;
 		}
 
@@ -212,12 +219,14 @@ int main(int argc, char *argv[]) {
 
 		int marker = (rtp_h[1] >> 7) & 0x1;
 
-		item = get(ip_h->ip_src, ip_h->ip_dst, udp_h->source, udp_h->dest, payload_type);
+		item = get(ip_h->ip_src, ip_h->ip_dst, udp_h->source, udp_h->dest, payload_type, header->ts);
+		item->last_tv = header->ts;
 		item->count++;
 	}
 
 	pcap_close(descr);
 
+	printf("PACKET_COUNT SRC_IP SRC_PORT DST_IP DST_PORT PAYLOAD_TYPE FIRST_PACKET_EPOCH LAST_PACKET_EPOCH\n");
 	dump_stats(g_list);
 	
 	return 0;
