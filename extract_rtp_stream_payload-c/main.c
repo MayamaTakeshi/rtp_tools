@@ -175,7 +175,7 @@ int main(int argc, char *argv[]) {
 	sprintf(filter, "src host %s and src port %s and dst host %s and dst port %s", src_ip, src_port, dst_ip, dst_port);
 	//printf("filter=%s\n", filter);
 
-    if(pcap_compile(descr, &fp, filter ,0 , 0) == -1) {
+	if(pcap_compile(descr, &fp, filter ,0 , 0) == -1) {
 		printf("Error calling pcap_compile\n");
 		exit(1);
 	}
@@ -193,6 +193,8 @@ int main(int argc, char *argv[]) {
 
 	int count = 0;
 
+	uint16_t last_seq_num = 0;
+
 	while(1) {
 		struct pcap_pkthdr *header;
 		const u_char *data;
@@ -206,16 +208,16 @@ int main(int argc, char *argv[]) {
 			break;
 		}	
 
-        unsigned long ts = header->ts.tv_sec * 1000 + header->ts.tv_usec / 1000;
+		unsigned long ts = header->ts.tv_sec * 1000 + header->ts.tv_usec / 1000;
 		//printf("ts=%lu\n", ts);
 
-        if(ts < start_stamp) {
-            continue;
-        }
+		if(ts < start_stamp) {
+			continue;
+		}
 
-        if(ts > end_stamp) {
-            break;
-        }
+		if(ts > end_stamp) {
+			break;
+		}
 
 		struct ip_header *ip_h;
 		struct udphdr *udp_h;
@@ -237,55 +239,61 @@ int main(int argc, char *argv[]) {
 		int ver = (rtp_h[0] >> 6) & 0x02;
 		if(ver != 2) {
 			// not RTP packet
-            printf("Ignoring non-RTP packet.\n");
+			printf("Ignoring non-RTP packet.\n");
 			continue;
 		}
 
 		int pt = rtp_h[1] & 0x7F;
-        if(pt != payload_type) {
-            printf("Ignoring packet with unpexected payload_type=%d\n", pt);
+		if(pt != payload_type) {
+			printf("Ignoring packet with unpexected payload_type=%d\n", pt);
 			continue;
 		}
 
-		uint16_t seqnum = (rtp_h[2] * 256 + rtp_h[3]);
-		//printf("seqnum: %u\n", seqnum);
+		uint16_t seq_num = (rtp_h[2] * 256 + rtp_h[3]);
+		//printf("seq_num: %u\n", seq_num);
+		if(seq_num == last_seq_num) {
+			printf("Ignoring packet with seq_num=%d already seen.\n", seq_num);
+			continue;
+		}
+
+		last_seq_num = seq_num;
 
 		int marker = (rtp_h[1] >> 7) & 0x1;
 		if(marker == 1) {
 			printf("marker_bit set\n");
 		}
 
-        unsigned long diff = ts - last_ts;
+		unsigned long diff = ts - last_ts;
 
 	int i;
 
-        if(diff > DELAY_THRESHOLD) {
-            unsigned silence_packets = diff / 20;
+		if(diff > DELAY_THRESHOLD) {
+			unsigned silence_packets = diff / 20;
 
-            for(i=0 ; i<silence_packets ; ++i) {
-                printf("adding silence for %lu %u\n", last_ts, seqnum);
-                write_silence(out, payload_type);
-                count++;
-            } 
-        }
+			for(i=0 ; i<silence_packets ; ++i) {
+				printf("adding silence for %lu %u\n", last_ts, seq_num);
+				write_silence(out, payload_type);
+				count++;
+			} 
+		}
 
 		int size = header->caplen - 54;
-        // rtp header without extensions is 12 bytes
+		// rtp header without extensions is 12 bytes
 		write_payload((FILE*)out, &rtp_h[12], size);
 
 		count++;
 
-        last_ts = ts;
+		last_ts = ts;
 	}
 
-    // write silence at the end if necessary
-    int expected = (end_stamp - start_stamp) / 20;
-    printf("expected=%i count=%i\n", expected, count);
-    int i;
-    for(i=0 ; i<(expected - count) ; ++i) {
-        printf("adding post silence\n");
-        write_silence(out, payload_type);
-    }
+	// write silence at the end if necessary
+	int expected = (end_stamp - start_stamp) / 20;
+	printf("expected=%i count=%i\n", expected, count);
+	int i;
+	for(i=0 ; i<(expected - count) ; ++i) {
+		printf("adding post silence\n");
+		write_silence(out, payload_type);
+	}
 
 	pcap_close(descr);
 	fclose(out);	
