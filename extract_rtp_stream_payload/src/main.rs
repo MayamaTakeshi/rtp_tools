@@ -102,6 +102,8 @@ fn main() {
 
     let mut count = 0;
 
+    let mut last_seq_num = 0;
+
     loop {
         let mut p = match cap.next_packet() {
             Ok(v) => v,
@@ -149,6 +151,13 @@ fn main() {
             eprintln!("Ignoring packet with unpexected payload_type={}.", hi.payload_type());
             continue;
         }
+
+        if h.sequence() == last_seq_num {
+            eprintln!("Ignoring packet with seq_num={} already seen.", h.sequence());
+            continue;
+        }
+
+        last_seq_num = h.sequence();
 
         let diff = ts - last_ts;
 
