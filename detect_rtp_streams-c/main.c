@@ -59,12 +59,12 @@ struct linked_list {
 
 struct linked_list *g_list = 0;
 
-struct linked_list *find(uint32_t ip_src, uint32_t ip_dst, u_short sport, u_short dport, struct linked_list *c, struct timeval tv) {
+struct linked_list *find(uint32_t ip_src, uint32_t ip_dst, u_short sport, u_short dport, int payload_type, struct linked_list *c, struct timeval tv) {
 	if(!c) return 0;
 
-	if(c->ip_src == ip_src && c->ip_dst == ip_dst && c->sport == sport && c->dport == dport) return c;
+	if(c->ip_src == ip_src && c->ip_dst == ip_dst && c->sport == sport && c->dport == dport && c->payload_type == payload_type) return c;
 
-	return find(ip_src, ip_dst, sport, dport, c->next, tv);
+	return find(ip_src, ip_dst, sport, dport, payload_type, c->next, tv);
 }
 
 struct linked_list *new_item(uint32_t ip_src, uint32_t ip_dst, u_short sport, u_short dport, int payload_type, struct timeval tv) {
@@ -89,7 +89,7 @@ struct linked_list *new_item(uint32_t ip_src, uint32_t ip_dst, u_short sport, u_
 }
 
 struct linked_list *get(uint32_t ip_src, uint32_t ip_dst, u_short sport, u_short dport, int payload_type, struct timeval tv) {
-	struct linked_list *item = find(ip_src, ip_dst, sport, dport, g_list, tv);
+	struct linked_list *item = find(ip_src, ip_dst, sport, dport, payload_type, g_list, tv);
 	if(item) {
 		return item;
 	}
