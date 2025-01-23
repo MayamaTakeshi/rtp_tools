@@ -50,6 +50,8 @@ struct ip_header {
 #define SILENCE_PAYLOAD_SIZE_GSM  33
 #define SILENCE_PAYLOAD_SIZE_G729 10
 
+#define VERBOSE 1
+
 
 char silence_ulaw[SILENCE_PAYLOAD_SIZE_ULAW];
 char silence_alaw[SILENCE_PAYLOAD_SIZE_ALAW];
@@ -239,20 +241,26 @@ int main(int argc, char *argv[]) {
 		int ver = (rtp_h[0] >> 6) & 0x02;
 		if(ver != 2) {
 			// not RTP packet
-			printf("Ignoring non-RTP packet.\n");
+			if(VERBOSE) {
+				printf("Ignoring non-RTP packet.\n");
+			}
 			continue;
 		}
 
 		int pt = rtp_h[1] & 0x7F;
 		if(pt != payload_type) {
-			printf("Ignoring packet with unpexected payload_type=%d\n", pt);
+			if(VERBOSE) {
+				printf("Ignoring packet with unpexected payload_type=%d\n", pt);
+			}
 			continue;
 		}
 
 		uint16_t seq_num = (rtp_h[2] * 256 + rtp_h[3]);
 		//printf("seq_num: %u\n", seq_num);
 		if(seq_num == last_seq_num) {
-			printf("Ignoring packet with seq_num=%d already seen.\n", seq_num);
+			if(VERBOSE) {
+				printf("Ignoring packet with seq_num=%d already seen.\n", seq_num);
+			}
 			continue;
 		}
 
@@ -260,7 +268,9 @@ int main(int argc, char *argv[]) {
 
 		int marker = (rtp_h[1] >> 7) & 0x1;
 		if(marker == 1) {
-			printf("marker_bit set\n");
+			if(VERBOSE) {
+				printf("marker_bit set\n");
+			}
 		}
 
 		unsigned long diff = ts - last_ts;
@@ -271,7 +281,9 @@ int main(int argc, char *argv[]) {
 			unsigned silence_packets = diff / 20;
 
 			for(i=0 ; i<silence_packets ; ++i) {
-				printf("adding silence for %lu %u\n", last_ts, seq_num);
+				if(VERBOSE) {
+					printf("adding silence for %lu %u\n", last_ts, seq_num);
+				}
 				write_silence(out, payload_type);
 				count++;
 			} 
@@ -288,10 +300,14 @@ int main(int argc, char *argv[]) {
 
 	// write silence at the end if necessary
 	int expected = (end_stamp - start_stamp) / 20;
-	printf("expected=%i count=%i\n", expected, count);
+	if(VERBOSE) {
+		printf("expected=%i count=%i\n", expected, count);
+	}
 	int i;
 	for(i=0 ; i<(expected - count) ; ++i) {
-		printf("adding post silence\n");
+		if(VERBOSE) {
+			printf("adding post silence\n");
+		}
 		write_silence(out, payload_type);
 	}
 
