@@ -305,9 +305,9 @@ int main(int argc, char *argv[]) {
 	}
 	int i;
 	for(i=0 ; i<(expected - count) ; ++i) {
-		if(VERBOSE) {
-			printf("adding post silence\n");
-		}
+		//if(VERBOSE) {
+		//	printf("adding post silence\n");
+		//}
 		write_silence(out, payload_type);
 	}
 
