@@ -50,7 +50,7 @@ struct ip_header {
 #define SILENCE_PAYLOAD_SIZE_GSM  33
 #define SILENCE_PAYLOAD_SIZE_G729 10
 
-#define VERBOSE 1
+
 
 
 char silence_ulaw[SILENCE_PAYLOAD_SIZE_ULAW];
@@ -112,34 +112,49 @@ void write_payload(FILE *fd, u_char *payload, int size) {
 
 void usage(char *app_name) {
 	printf("\n"\
-"Usage: %s pcap_file src_ip src_port dst_ip dst_port payload_type codec start_stamp end_stamp stream.raw\n"\
+"Usage: %s [-v] pcap_file src_ip src_port dst_ip dst_port payload_type codec start_stamp end_stamp stream.raw\n"\
 "Ex:    %s test.pcap 192.168.2.1 10000 192.168.2.2 20000 0 pcmu 1597619570222 1597619590487 out_file\n"\
+"Ex:    %s -v test.pcap 192.168.2.1 10000 192.168.2.2 20000 0 pcmu 1597619570222 1597619590487 out_file\n"\
 "\n"\
 "Details:\n"\
 "      - start_stamp and end_stamp should be epoch in milliseconds\n"\
 "      - codec: pcmu | pcma | gsm | g.729\n"\
-, app_name, app_name);
+"      - -v: verbose output\n"\
+, app_name, app_name, app_name);
 }
 
 
 int main(int argc, char *argv[]) {
-	int c;
-	if(argc != 11) {
-		printf("Invalid number of arguments. Expected: 10, Received: %d\n", argc-1);
+	int verbose_flag = 0;
+	int opt;
+	while ((opt = getopt(argc, argv, "v")) != -1) {
+		switch (opt) {
+			case 'v':
+				verbose_flag = 1;
+				break;
+			default: /* '?' */
+				fprintf(stderr, "Usage: %s [-v] pcap_file src_ip src_port dst_ip dst_port payload_type codec start_stamp end_stamp stream.raw\n",
+						argv[0]);
+				exit(EXIT_FAILURE);
+		}
+	}
+
+	if(argc - optind != 10) {
+		printf("Invalid number of arguments. Expected: 10, Received: %d\n", argc - optind);
 		usage(argv[0]);
 		exit(1);
 	}
 
-	char *pcap_file = argv[1];
-	char *src_ip = argv[2];
-	char *src_port = argv[3];
-	char *dst_ip = argv[4];
-	char *dst_port = argv[5];
-	char *payload_type_str = argv[6];
-	char *codec = argv[7];
-	char *start_stamp_str = argv[8];
-	char *end_stamp_str = argv[9];
-	char *out_file = argv[10];
+	char *pcap_file = argv[optind];
+	char *src_ip = argv[optind + 1];
+	char *src_port = argv[optind + 2];
+	char *dst_ip = argv[optind + 3];
+	char *dst_port = argv[optind + 4];
+	char *payload_type_str = argv[optind + 5];
+	char *codec = argv[optind + 6];
+	char *start_stamp_str = argv[optind + 7];
+	char *end_stamp_str = argv[optind + 8];
+	char *out_file = argv[optind + 9];
 
 	int payload_type = atoi(payload_type_str);
 	unsigned long start_stamp = strtoul(start_stamp_str, NULL, 10); 
@@ -241,7 +256,7 @@ int main(int argc, char *argv[]) {
 		int ver = (rtp_h[0] >> 6) & 0x02;
 		if(ver != 2) {
 			// not RTP packet
-			if(VERBOSE) {
+			if(verbose_flag) {
 				printf("Ignoring non-RTP packet.\n");
 			}
 			continue;
@@ -249,7 +264,7 @@ int main(int argc, char *argv[]) {
 
 		int pt = rtp_h[1] & 0x7F;
 		if(pt != payload_type) {
-			if(VERBOSE) {
+			if(verbose_flag) {
 				printf("Ignoring packet with unpexected payload_type=%d\n", pt);
 			}
 			continue;
@@ -258,7 +273,7 @@ int main(int argc, char *argv[]) {
 		uint16_t seq_num = (rtp_h[2] * 256 + rtp_h[3]);
 		//printf("seq_num: %u\n", seq_num);
 		if(seq_num == last_seq_num) {
-			if(VERBOSE) {
+			if(verbose_flag) {
 				printf("Ignoring packet with seq_num=%d already seen.\n", seq_num);
 			}
 			continue;
@@ -268,7 +283,7 @@ int main(int argc, char *argv[]) {
 
 		int marker = (rtp_h[1] >> 7) & 0x1;
 		if(marker == 1) {
-			if(VERBOSE) {
+			if(verbose_flag) {
 				printf("marker_bit set\n");
 			}
 		}
@@ -281,7 +296,7 @@ int main(int argc, char *argv[]) {
 			unsigned silence_packets = diff / 20;
 
 			for(i=0 ; i<silence_packets ; ++i) {
-				if(VERBOSE) {
+				if(verbose_flag) {
 					printf("adding silence for %lu %u\n", last_ts, seq_num);
 				}
 				write_silence(out, payload_type);
@@ -300,14 +315,14 @@ int main(int argc, char *argv[]) {
 
 	// write silence at the end if necessary
 	int expected = (end_stamp - start_stamp) / 20;
-	if(VERBOSE) {
+	if(verbose_flag) {
 		printf("expected=%i count=%i\n", expected, count);
 	}
 	int i;
 	for(i=0 ; i<(expected - count) ; ++i) {
-		//if(VERBOSE) {
-		//	printf("adding post silence\n");
-		//}
+		if(verbose_flag) {
+			printf("adding post silence\n");
+		}
 		write_silence(out, payload_type);
 	}
 
